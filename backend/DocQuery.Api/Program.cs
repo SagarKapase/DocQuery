@@ -33,14 +33,25 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
+// ---- CORS: allow the hosted React app to call this API ----
+// FrontendUrl can hold several addresses separated by commas.
+var frontendUrls = (builder.Configuration["FrontendUrl"] ?? "http://localhost:5173")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy => policy.WithOrigins(frontendUrls).AllowAnyHeader().AllowAnyMethod()));
+
 var app = builder.Build();
 
 // Create tables on startup (simple alternative to migrations)
 await app.Services.GetRequiredService<Database>().InitializeAsync();
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Open the API's address in a browser to check it is running
+app.MapGet("/", () => "DocQuery API is running");
 
 app.Run();
 
