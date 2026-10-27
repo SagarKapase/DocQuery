@@ -36,11 +36,14 @@ builder.Services.AddAuthorization();
 // ---- CORS: allow the hosted React app to call this API ----
 // FrontendUrl can hold several addresses separated by commas.
 var frontendUrls = (builder.Configuration["FrontendUrl"] ?? "http://localhost:5173")
-    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(url => url.TrimEnd('/')) // browsers send the origin without a trailing "/"
+    .ToArray();
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy.WithOrigins(frontendUrls).AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
+app.Logger.LogInformation("CORS allowed origins: {Origins}", string.Join(", ", frontendUrls));
 
 // Create tables on startup (simple alternative to migrations)
 await app.Services.GetRequiredService<Database>().InitializeAsync();
